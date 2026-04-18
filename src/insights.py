@@ -6,10 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.utils import format_value
-
-
-IDENTIFIER_KEYWORDS = ("id", "number", "customer_number", "member_customer_number")
+from src.utils import format_value, is_identifier_like
 
 
 def _pretty_name(column_name: str | None) -> str:
@@ -17,14 +14,6 @@ def _pretty_name(column_name: str | None) -> str:
     if not column_name:
         return "value"
     return column_name.replace("_", " ")
-
-
-def _is_identifier_like(column_name: str | None) -> bool:
-    """Identify numeric columns that behave more like identifiers than measures."""
-    if not column_name:
-        return False
-    lowered = column_name.lower()
-    return any(keyword in lowered for keyword in IDENTIFIER_KEYWORDS)
 
 
 def _summarize_dataset_shape(analysis_results: dict[str, Any]) -> str:
@@ -43,7 +32,7 @@ def _summarize_target_metrics(analysis_results: dict[str, Any]) -> str | None:
     """Describe the main numeric target when it is meaningful."""
     metrics = analysis_results["summary_metrics"]
     target_column = metrics.get("target_column")
-    if not target_column or _is_identifier_like(target_column):
+    if not target_column or is_identifier_like(target_column):
         return None
 
     target_total = metrics.get("target_total")
@@ -67,7 +56,7 @@ def _summarize_grouping(analysis_results: dict[str, Any]) -> str | None:
         return None
 
     top_group = grouped_summary.iloc[0]
-    if "total_value" in grouped_summary.columns and target_column and not _is_identifier_like(target_column):
+    if "total_value" in grouped_summary.columns and target_column and not is_identifier_like(target_column):
         return (
             f"The strongest {_pretty_name(group_column)} is {top_group[group_column]} with "
             f"a total {_pretty_name(target_column)} of {format_value(top_group['total_value'])} "
@@ -92,7 +81,7 @@ def _summarize_distribution(analysis_results: dict[str, Any]) -> str | None:
     top_group = grouped_summary.iloc[0]
     bottom_group = grouped_summary.iloc[-1]
 
-    if "total_value" in grouped_summary.columns and target_column and not _is_identifier_like(target_column):
+    if "total_value" in grouped_summary.columns and target_column and not is_identifier_like(target_column):
         return (
             f"There is a visible gap between {_pretty_name(group_column)} groups: "
             f"{top_group[group_column]} leads with {format_value(top_group['total_value'])}, "
@@ -115,7 +104,7 @@ def _summarize_trend(analysis_results: dict[str, Any]) -> str | None:
     if trend_summary.empty or len(trend_summary) < 2 or not date_column:
         return None
 
-    if "total_value" in trend_summary.columns and target_column and not _is_identifier_like(target_column):
+    if "total_value" in trend_summary.columns and target_column and not is_identifier_like(target_column):
         first_value = trend_summary["total_value"].iloc[0]
         last_value = trend_summary["total_value"].iloc[-1]
         if last_value > first_value:
@@ -170,7 +159,7 @@ def _summarize_top_record(analysis_results: dict[str, Any]) -> str | None:
     top_record = analysis_results.get("top_record")
     group_column = analysis_results["selected_columns"].get("group_column")
 
-    if not top_record or not target_column or _is_identifier_like(target_column):
+    if not top_record or not target_column or is_identifier_like(target_column):
         return None
 
     group_text = ""

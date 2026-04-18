@@ -31,6 +31,7 @@ GROUP_KEYWORDS = (
 )
 
 DATE_KEYWORDS = ("date", "day", "month", "year", "time")
+IDENTIFIER_KEYWORDS = ("id", "number", "customer_number", "member_customer_number")
 
 
 def detect_column_types(dataframe: pd.DataFrame) -> dict[str, list[str]]:
@@ -110,3 +111,11 @@ def format_value(value: Any) -> str:
     if isinstance(value, pd.Timestamp):
         return value.strftime("%Y-%m-%d")
     return str(value)
+
+
+def is_identifier_like(column_name: str | None) -> bool:
+    """Identify columns that behave more like record identifiers than measures."""
+    if not column_name:
+        return False
+    lowered = column_name.lower()
+    return any(keyword in lowered for keyword in IDENTIFIER_KEYWORDS)
