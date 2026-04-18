@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from itertools import cycle
 from typing import Any
 
 import altair as alt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -64,6 +66,7 @@ THEME_PALETTES = {
         "widget_bg": "rgba(15, 18, 24, 0.92)",
         "widget_text": "#f3eee0",
         "widget_selected_bg": "rgba(184, 148, 69, 0.20)",
+        "chart_bg": "rgba(10, 13, 18, 0.94)",
     },
     "Light": {
         "bg": "#f6f1e6",
@@ -103,6 +106,7 @@ THEME_PALETTES = {
         "widget_bg": "rgba(255, 250, 242, 0.98)",
         "widget_text": "#1f2530",
         "widget_selected_bg": "rgba(156, 113, 32, 0.14)",
+        "chart_bg": "rgba(255, 250, 242, 0.98)",
     },
 }
 
@@ -135,6 +139,7 @@ def build_theme_css(mode: str) -> str:
             --widget-bg: {palette['widget_bg']};
             --widget-text: {palette['widget_text']};
             --widget-selected-bg: {palette['widget_selected_bg']};
+            --chart-bg: {palette['chart_bg']};
         }}
 
         .stApp {{
@@ -374,6 +379,20 @@ def build_theme_css(mode: str) -> str:
             overflow: hidden;
         }}
 
+        .sidebar-note {{
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 0.95rem 1rem;
+            background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-soft));
+            margin-top: 0.55rem;
+        }}
+
+        .sidebar-note strong {{
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--accent-strong);
+        }}
+
         .metric-card {{
             border: 1px solid var(--border);
             background:
@@ -445,8 +464,16 @@ def build_theme_css(mode: str) -> str:
         .forecast-tile {{
             border: 1px solid var(--border);
             border-radius: 16px;
-            background: rgba(255, 255, 255, 0.03);
+            background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-soft));
             padding: 0.95rem 1rem;
+        }}
+
+        .chart-shell {{
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 0.85rem;
+            background: linear-gradient(180deg, var(--chart-bg), var(--bg-panel-soft));
+            margin-top: 0.25rem;
         }}
 
         .forecast-label {{
@@ -651,6 +678,17 @@ def get_chart_palette(mode: str) -> dict[str, str]:
     }
 
 
+def format_chart_number(value: float) -> str:
+    """Format numbers for chart labels and tooltips."""
+    if abs(value) >= 1_000_000:
+        return f"{value / 1_000_000:.1f}M"
+    if abs(value) >= 1_000:
+        return f"{value / 1_000:.1f}K"
+    if float(value).is_integer():
+        return f"{int(value)}"
+    return f"{value:.2f}"
+
+
 def render_hero(has_results: bool) -> None:
     """Render the top hero section."""
     status_badges = [
@@ -752,10 +790,69 @@ def build_forecast_guidance(results: dict[str, Any]) -> list[str]:
     return suggestions
 
 
-def run_pipeline(source_mode: str, folder_path: str, uploaded_files: list[Any]) -> dict[str, Any]:
+def load_showcase_dataset() -> dict[str, Any]:
+    """Build a demo-ready dataset that exercises analysis, visuals, and forecasting."""
+    months = pd.date_range("2024-01-01", periods=12, freq="MS")
+    regions = ["Gotham Central", "North Harbor", "Metro East", "Old Town"]
+    categories = ["Electronics", "Operations", "Healthcare", "Logistics"]
+    products = ["Nova Hub", "Pulse Kit", "Vector Desk", "Aegis Pack"]
+    base_sales = [42000, 46500, 49800, 54000, 58600, 61200, 64800, 68300, 72100, 76800, 80100, 84500]
+    region_factor = {
+        "Gotham Central": 1.18,
+        "North Harbor": 1.04,
+        "Metro East": 0.96,
+        "Old Town": 0.88,
+    }
+
+    rows: list[dict[str, Any]] = []
+    category_cycle = cycle(categories)
+    product_cycle = cycle(products)
+
+    for month_index, month in enumerate(months):
+        for region_index, region in enumerate(regions):
+            sales = round(base_sales[month_index] * region_factor[region] + region_index * 950)
+            orders = 115 + month_index * 6 + region_index * 4
+            cost = round(sales * (0.58 + region_index * 0.02))
+            profit = sales - cost
+            rows.append(
+                {
+                    "Date": month,
+                    "Region": region,
+                    "Category": next(category_cycle),
+                    "Product": next(product_cycle),
+                    "Sales": sales,
+                    "Orders": orders,
+                    "Cost": cost,
+                    "Profit": profit,
+                    "source_file": "showcase_dataset.xlsx",
+                }
+            )
+
+    showcase_df = pd.DataFrame(rows)
+    summary = {
+        "files_found": 1,
+        "files_loaded": 1,
+        "loaded_file_names": ["showcase_dataset.xlsx"],
+        "skipped_files": [],
+        "total_rows_loaded": int(len(showcase_df)),
+        "detected_columns": showcase_df.columns.tolist(),
+    }
+    return {
+        "data": showcase_df,
+        "summary": summary,
+    }
+
+
+def run_pipeline(
+    source_mode: str,
+    folder_path: str,
+    uploaded_files: list[Any],
+) -> dict[str, Any]:
     """Execute the full analysis pipeline for the selected input mode."""
     if source_mode == "Folder":
         load_result = load_excel_folder(folder_path)
+    elif source_mode == "Showcase":
+        load_result = load_showcase_dataset()
     else:
         load_result = load_uploaded_excel_files(uploaded_files)
 
@@ -784,13 +881,29 @@ def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
     )
 
     st.sidebar.markdown("### Data Source")
-    source_mode = st.sidebar.radio("Mode", options=["Folder", "Upload"], horizontal=True, label_visibility="collapsed")
+    source_mode = st.sidebar.radio(
+        "Mode",
+        options=["Folder", "Upload", "Showcase"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
     folder_path = ""
     uploaded_files: list[Any] = []
 
     if source_mode == "Folder":
         folder_path = st.sidebar.text_input("Folder path", value="data", placeholder="data")
         st.sidebar.caption("Point to a folder containing one or more `.xlsx` workbooks.")
+    elif source_mode == "Showcase":
+        st.sidebar.markdown(
+            """
+            <div class="sidebar-note">
+                <strong>Showcase dataset</strong>
+                Uses a built-in monthly business dataset with valid metric and date columns so prediction,
+                timeline summary, and time-trend visuals can all be demonstrated reliably.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         uploaded_files = st.sidebar.file_uploader(
             "Excel files",
@@ -800,7 +913,15 @@ def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
         )
 
     st.sidebar.markdown("### Workflow")
-    st.sidebar.caption("Load the dataset, review the cleaned output, inspect metrics, then export the result set.")
+    st.sidebar.markdown(
+        """
+        <div class="sidebar-note">
+            <strong>Suggested flow</strong>
+            Load the workbook set, review the cleaned dataset, inspect the visual analysis, then export the result set.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     run_clicked = st.sidebar.button("Analyze Data", type="primary", use_container_width=True)
     return source_mode, folder_path, uploaded_files, run_clicked, appearance
 
@@ -966,7 +1087,7 @@ def render_analysis_dashboard(results: dict[str, Any], appearance: str) -> None:
     grouped_col, trend_col = st.columns(2)
     with grouped_col:
         st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-        st.markdown("### Group Analysis")
+        st.markdown("### Group Summary Table")
         grouped = analysis["grouped_summary"]
         if not grouped.empty:
             st.dataframe(
@@ -976,47 +1097,13 @@ def render_analysis_dashboard(results: dict[str, Any], appearance: str) -> None:
                 height=320,
                 row_height=36,
             )
-            chart_value = "total_value" if "total_value" in grouped.columns else "record_count"
-            category_column = grouped.columns[0]
-            chart_source = grouped[[category_column, chart_value]].copy()
-            chart_source[category_column] = chart_source[category_column].astype(str)
-            chart = (
-                alt.Chart(chart_source)
-                .mark_bar(
-                    cornerRadiusTopRight=8,
-                    cornerRadiusBottomRight=8,
-                    color=chart_palette["bar"],
-                )
-                .encode(
-                    x=alt.X(f"{chart_value}:Q", title=chart_value.replace("_", " ").title()),
-                    y=alt.Y(
-                        f"{category_column}:N",
-                        sort="-x",
-                        title=category_column.replace("_", " ").title(),
-                    ),
-                    tooltip=[
-                        alt.Tooltip(f"{category_column}:N", title=category_column.replace("_", " ").title()),
-                        alt.Tooltip(f"{chart_value}:Q", title=chart_value.replace("_", " ").title(), format=",.2f"),
-                    ],
-                )
-                .properties(height=max(260, len(chart_source) * 42))
-                .configure_view(stroke=None)
-                .configure_axis(
-                    labelColor=chart_palette["axis"],
-                    titleColor=chart_palette["axis"],
-                    gridColor=chart_palette["grid"],
-                    domainColor=chart_palette["grid"],
-                    tickColor=chart_palette["grid"],
-                )
-            )
-            st.altair_chart(chart, use_container_width=True)
         else:
             st.info("A reliable grouping field was not detected for grouped analysis.")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with trend_col:
         st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-        st.markdown("### Timeline Analysis")
+        st.markdown("### Timeline Summary Table")
         trend = analysis["trend_summary"]
         if not trend.empty:
             st.dataframe(
@@ -1026,20 +1113,50 @@ def render_analysis_dashboard(results: dict[str, Any], appearance: str) -> None:
                 height=320,
                 row_height=36,
             )
-            y_column = "total_value" if "total_value" in trend.columns else "record_count"
-            time_column = trend.columns[0]
-            trend_source = trend[[time_column, y_column]].copy()
-            line_chart = (
-                alt.Chart(trend_source)
-                .mark_line(color=chart_palette["line"], strokeWidth=3, point=alt.OverlayMarkDef(size=70))
+        else:
+            st.info("Timeline analysis is unavailable because no valid date field was detected.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+def render_visual_analytics(results: dict[str, Any], appearance: str) -> None:
+    """Render phase 8 visual analytics."""
+    analysis = results["analysis"]
+    grouped = analysis["grouped_summary"]
+    trend = analysis["trend_summary"]
+    chart_palette = get_chart_palette(appearance)
+
+    render_section_title("Visual Analytics")
+    comparison_col, share_col = st.columns(2)
+
+    with comparison_col:
+        st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+        st.markdown("### Group Comparison")
+        if not grouped.empty:
+            chart_value = "total_value" if "total_value" in grouped.columns else "record_count"
+            category_column = grouped.columns[0]
+            chart_source = grouped[[category_column, chart_value]].copy()
+            chart_source[category_column] = chart_source[category_column].astype(str)
+            bar_chart = (
+                alt.Chart(chart_source)
+                .mark_bar(
+                    cornerRadiusTopRight=7,
+                    cornerRadiusBottomRight=7,
+                    color=chart_palette["bar"],
+                    size=24,
+                )
                 .encode(
-                    x=alt.X(f"{time_column}:T", title=time_column.replace("_", " ").title()),
-                    y=alt.Y(f"{y_column}:Q", title=y_column.replace("_", " ").title()),
+                    x=alt.X(
+                        f"{chart_value}:Q",
+                        title=chart_value.replace("_", " ").title(),
+                        axis=alt.Axis(labelExpr="datum.value >= 1000000 ? format(datum.value/1000000, '.1f') + 'M' : datum.value >= 1000 ? format(datum.value/1000, '.1f') + 'K' : datum.value"),
+                    ),
+                    y=alt.Y(f"{category_column}:N", sort="-x", title=category_column.replace("_", " ").title()),
                     tooltip=[
-                        alt.Tooltip(f"{time_column}:T", title=time_column.replace("_", " ").title()),
-                        alt.Tooltip(f"{y_column}:Q", title=y_column.replace("_", " ").title(), format=",.2f"),
+                        alt.Tooltip(f"{category_column}:N", title=category_column.replace("_", " ").title()),
+                        alt.Tooltip(f"{chart_value}:Q", title=chart_value.replace("_", " ").title(), format=",.2f"),
                     ],
                 )
+                .properties(height=max(250, len(chart_source) * 34))
                 .configure_view(stroke=None)
                 .configure_axis(
                     labelColor=chart_palette["axis"],
@@ -1048,12 +1165,91 @@ def render_analysis_dashboard(results: dict[str, Any], appearance: str) -> None:
                     domainColor=chart_palette["grid"],
                     tickColor=chart_palette["grid"],
                 )
-                .properties(height=320)
             )
-            st.altair_chart(line_chart, use_container_width=True)
+            st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+            st.altair_chart(bar_chart, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
-            st.info("Timeline analysis is unavailable because no valid date field was detected.")
+            st.info("Group comparison becomes available when a grouping field is detected.")
         st.markdown("</div>", unsafe_allow_html=True)
+
+    with share_col:
+        st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+        st.markdown("### Contribution Share")
+        if not grouped.empty:
+            share_value = "total_value" if "total_value" in grouped.columns else "record_count"
+            category_column = grouped.columns[0]
+            share_source = grouped[[category_column, share_value]].copy().head(6)
+            share_source[category_column] = share_source[category_column].astype(str)
+            share_chart = (
+                alt.Chart(share_source)
+                .mark_arc(innerRadius=60, outerRadius=115)
+                .encode(
+                    theta=alt.Theta(f"{share_value}:Q"),
+                    color=alt.Color(
+                        f"{category_column}:N",
+                        scale=alt.Scale(range=[
+                            chart_palette["bar"],
+                            chart_palette["bar_alt"],
+                            chart_palette["line"],
+                            "#e0b95f",
+                            "#7f5a16",
+                            "#d8c8a4",
+                        ]),
+                        legend=alt.Legend(title=category_column.replace("_", " ").title(), labelColor=chart_palette["axis"], titleColor=chart_palette["axis"]),
+                    ),
+                    tooltip=[
+                        alt.Tooltip(f"{category_column}:N", title=category_column.replace("_", " ").title()),
+                        alt.Tooltip(f"{share_value}:Q", title=share_value.replace("_", " ").title(), format=",.2f"),
+                    ],
+                )
+                .properties(height=320)
+                .configure_view(stroke=None)
+            )
+            st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+            st.altair_chart(share_chart, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.info("Contribution share is shown when grouped analysis data is available.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+    st.markdown("### Time Trend")
+    if not trend.empty:
+        y_column = "total_value" if "total_value" in trend.columns else "record_count"
+        time_column = trend.columns[0]
+        trend_source = trend[[time_column, y_column]].copy()
+        line_chart = (
+            alt.Chart(trend_source)
+            .mark_line(color=chart_palette["line"], strokeWidth=3, point=alt.OverlayMarkDef(size=70))
+            .encode(
+                x=alt.X(f"{time_column}:T", title=time_column.replace("_", " ").title()),
+                y=alt.Y(
+                    f"{y_column}:Q",
+                    title=y_column.replace("_", " ").title(),
+                    axis=alt.Axis(labelExpr="datum.value >= 1000000 ? format(datum.value/1000000, '.1f') + 'M' : datum.value >= 1000 ? format(datum.value/1000, '.1f') + 'K' : datum.value"),
+                ),
+                tooltip=[
+                    alt.Tooltip(f"{time_column}:T", title=time_column.replace("_", " ").title()),
+                    alt.Tooltip(f"{y_column}:Q", title=y_column.replace("_", " ").title(), format=",.2f"),
+                ],
+            )
+            .configure_view(stroke=None)
+            .configure_axis(
+                labelColor=chart_palette["axis"],
+                titleColor=chart_palette["axis"],
+                gridColor=chart_palette["grid"],
+                domainColor=chart_palette["grid"],
+                tickColor=chart_palette["grid"],
+            )
+            .properties(height=340)
+        )
+        st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+        st.altair_chart(line_chart, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("Time trend visualization requires a valid date field in the dataset.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_insight_section(results: dict[str, Any]) -> None:
@@ -1174,7 +1370,11 @@ def main() -> None:
     if run_clicked:
         try:
             with st.spinner("Analyzing workbook set..."):
-                st.session_state["results"] = run_pipeline(source_mode, folder_path, uploaded_files)
+                st.session_state["results"] = run_pipeline(
+                    source_mode,
+                    folder_path,
+                    uploaded_files,
+                )
         except (DataLoadError, DataCleaningError, DataAnalysisError, PredictionError, ValueError) as error:
             st.session_state.pop("results", None)
             st.error(str(error))
@@ -1190,6 +1390,7 @@ def main() -> None:
     render_processing_overview(results)
     render_preview(results)
     render_analysis_dashboard(results, appearance)
+    render_visual_analytics(results, appearance)
     render_insight_section(results)
     render_prediction_section(results)
     render_export_section(results)

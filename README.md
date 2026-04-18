@@ -23,7 +23,7 @@ NeuroSheet is designed to help a user:
 - Phase 5 complete: human-readable insight generation implemented
 - Phase 6 complete: linear regression forecasting module implemented
 - Phase 7 complete: interactive Streamlit dashboard implemented
-- Phase 8 in progress through UI/chart refinement
+- Phase 8 complete: visual analytics and chart refinement implemented
 
 ## Core Features
 
@@ -36,6 +36,7 @@ NeuroSheet is designed to help a user:
 - Plain-English insight generation
 - Forecast readiness and prediction support
 - Interactive black-and-gold dashboard with dark and light appearance modes
+- Dedicated group comparison, contribution share, and timeline visual analytics
 - CSV and text report download actions
 
 ## Expected Input Format
@@ -126,9 +127,11 @@ Implemented in `app.py`:
 
 - folder and upload input flow
 - dark/light appearance control
+- separate showcase mode for demonstrations
 - preview tables
 - processing summary cards
-- grouped and trend visual sections
+- grouped and trend summary sections
+- dedicated visual analytics section with comparison, share, and timeline charts
 - findings and forecast panels
 - export/download controls
 
@@ -153,6 +156,15 @@ streamlit run app.py
 3. Click `Analyze Data`.
 4. Review the cleaned dataset, metrics, findings, and forecast section.
 5. Download the cleaned CSV or summary report.
+
+## Showcase Mode
+
+Use the `Showcase` mode in the dashboard when you want to demonstrate:
+
+- valid date-driven trend analysis
+- timeline summary
+- grouped visual analytics
+- forecast output with a proper numeric business metric
 
 ## Manual Backend Check
 
