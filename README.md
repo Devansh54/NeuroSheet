@@ -24,6 +24,8 @@ NeuroSheet is designed to help a user:
 - Phase 6 complete: linear regression forecasting module implemented
 - Phase 7 complete: interactive Streamlit dashboard implemented
 - Phase 8 complete: visual analytics and chart refinement implemented
+- Phase 9 complete: export and reporting workflow implemented
+- Phase 10 complete: testing and final polish implemented
 
 ## Core Features
 
@@ -39,6 +41,7 @@ NeuroSheet is designed to help a user:
 - Dedicated group comparison, contribution share, and timeline visual analytics
 - CSV and text report download actions
 - Saved export artifacts written to the `outputs/` folder
+- Pytest coverage for core pipeline and export modules
 
 ## Expected Input Format
 
@@ -144,6 +147,16 @@ Implemented in `src/exporter.py`:
 - writes a plain-text report into `outputs/`
 - returns saved artifact paths to the dashboard
 
+### Testing
+
+Implemented in `tests/`:
+
+- loader coverage
+- cleaner coverage
+- analyzer coverage
+- predictor coverage
+- exporter coverage
+
 ## How To Run
 
 ### 1. Install dependencies
@@ -213,6 +226,7 @@ When reviewing the UI, verify the following:
 - forecast output appears when the dataset supports it, or shows guidance when it does not
 - download buttons return the cleaned CSV and text report
 - save-to-folder export writes files into `outputs/`
+- pytest suite passes for the core modules
 
 ## Current Constraints
 
@@ -220,7 +234,7 @@ When reviewing the UI, verify the following:
 - forecast quality depends entirely on the quality of the input columns
 - a dataset without a meaningful numeric business metric will not produce a forecast
 - a dataset without a date field will not produce timeline forecasting
-- automated tests are still pending
+- automated UI/browser tests are still pending
 
 ## Presentation Positioning
 
