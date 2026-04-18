@@ -6,7 +6,8 @@ NeuroSheet AI is a Python-based project that will transform multiple Excel files
 
 - Phase 1 complete: project foundation finalized
 - Phase 2 complete: multi-file Excel data pipeline implemented
-- Phase 3 onward: pending
+- Phase 3 complete: cleaning and standardization pipeline implemented
+- Phase 4 onward: pending
 
 ## Finalized Project Scope
 
@@ -31,7 +32,7 @@ The project currently assumes:
 - Small column differences are allowed during merge
 - At least one numeric column should exist for meaningful analysis later
 - A date column is optional
-- Column names may vary in spacing/case and will be standardized in Phase 3
+- Column names may vary in spacing/case and are standardized during cleaning
 - The pipeline adds a `source_file` column automatically
 
 ## Frozen Project Structure
@@ -64,6 +65,19 @@ NeuroSheet/
 - Preserves the source file name in a `source_file` column
 - Returns a load summary with file counts, skipped files, row totals, and detected columns
 - Includes a second loader for uploaded files to support later Streamlit integration
+
+## Phase 3 Features Implemented
+
+- Removes fully empty rows
+- Standardizes column names into lowercase snake_case
+- Trims text values and normalizes blank-like entries
+- Converts numeric-looking columns into real numeric types
+- Converts likely date columns into datetime values
+- Removes duplicate rows
+- Fills missing numeric values with median
+- Fills missing text values with `Unknown`
+- Fills missing date values from nearby available dates
+- Returns a cleaning summary describing what changed
 
 ## How To Test Phase 2
 
@@ -115,6 +129,50 @@ You should get:
 - a `source_file` column
 - summary containing files found, files loaded, skipped files, total rows loaded, detected columns
 
+## How To Test Phase 3
+
+### 1. Use the existing Phase 2 sample files
+
+The current `data/` folder already contains sample Excel files for testing.
+
+### 2. Run Python
+
+```bash
+python
+```
+
+### 3. Load and clean the merged data
+
+```python
+from src.data_loader import load_excel_folder
+from src.data_cleaner import clean_dataframe
+
+load_result = load_excel_folder("data")
+clean_result = clean_dataframe(load_result["data"])
+
+print(clean_result["summary"])
+print(clean_result["data"].head())
+```
+
+### 4. Test these cases
+
+- data with column names like `Sales Amount`, ` sales `, or `SALES`
+- duplicate rows across files
+- missing numeric values
+- missing text values
+- optional date column with real date values
+- files with slightly different columns
+
+### 5. Expected success result
+
+You should get:
+
+- cleaned dataframe with standardized column names
+- duplicate rows removed
+- missing values filled
+- likely date columns converted
+- a summary explaining what cleaning steps were applied
+
 ## Merge Workflow From Now On
 
 You asked to work directly on `main` from now on.
@@ -128,8 +186,14 @@ Recommended flow for each phase:
 
 ## Current Commit Direction
 
-Phase 2 should use a commit message like:
+Phase 2 used a commit message like:
 
 ```text
 feat: add multi-file excel loading pipeline
+```
+
+Phase 3 should use a commit message like:
+
+```text
+feat: add data cleaning and standardization pipeline
 ```
