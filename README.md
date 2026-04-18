@@ -1,41 +1,64 @@
-﻿# NeuroSheet AI
+# NeuroSheet AI
 
-NeuroSheet AI is a Python-based project that will transform multiple Excel files into meaningful insights, visual analytics, and future predictions through an interactive dashboard.
+NeuroSheet AI is a Python-based project that transforms Excel files into cleaned datasets, summary analysis, human-readable insights, and safe future predictions through a modular workflow that will later power a Streamlit dashboard.
 
-## Current Status
+## Current Progress
 
-- Phase 1 complete: project foundation finalized
-- Phase 2 complete: multi-file Excel data pipeline implemented
-- Phase 3 complete: cleaning and standardization pipeline implemented
-- Phase 4 onward: pending
+- Phase 1 complete: project foundation
+- Phase 2 complete: multi-file Excel loading pipeline
+- Phase 3 complete: data cleaning and standardization
+- Phase 4 complete: analysis engine
+- Phase 5 complete: human-readable insight generation
+- Phase 6 complete: linear regression prediction module
+- Phase 7 onward: pending
 
-## Finalized Project Scope
+## Implemented Features
 
-The complete project will include:
+### 1. Data Loading
 
-- Multi-file Excel reading
-- Data merge and cleaning
-- Summary analysis
-- Human-readable insight generation
-- Future prediction using linear regression
-- Streamlit dashboard
-- Visual charts
-- Exportable outputs
+- Reads `.xlsx` files from the `data/` folder
+- Merges multiple files into one dataframe
+- Skips invalid or empty Excel files when possible
+- Preserves source file names in a `source_file` column
+- Returns a load summary with file counts and detected columns
 
-## Expected Excel Format
+### 2. Data Cleaning
 
-The project currently assumes:
+- Removes fully empty rows
+- Standardizes column names into lowercase snake_case
+- Trims text fields
+- Normalizes blank-like values
+- Converts numeric-looking text into numeric columns
+- Converts likely date columns into datetime
+- Removes duplicate rows
+- Fills missing values with safe defaults
+- Returns a cleaning summary
 
-- Input files are `.xlsx` Excel files
-- Files should represent the same type of dataset
-- Same columns across files are preferred
-- Small column differences are allowed during merge
-- At least one numeric column should exist for meaningful analysis later
-- A date column is optional
-- Column names may vary in spacing/case and are standardized during cleaning
-- The pipeline adds a `source_file` column automatically
+### 3. Analysis Engine
 
-## Frozen Project Structure
+- Detects numeric, categorical, and date columns
+- Chooses sensible default target/group/date columns
+- Builds numeric summaries
+- Creates grouped summaries
+- Creates trend summaries when date data exists
+- Identifies the top record for meaningful numeric targets
+
+### 4. Insight Generation
+
+- Produces plain-English insights from analysis output
+- Works on numeric, categorical, and mixed datasets
+- Avoids misleading insights for identifier-like numeric columns
+- Highlights data quality issues such as many `Unknown` values
+
+### 5. Prediction Module
+
+- Uses linear regression for forecasting
+- Supports date-based prediction when a date column exists
+- Supports sequence-based prediction when no date column exists
+- Refuses prediction when the target is unsuitable
+- Blocks misleading prediction on identifier-like columns such as member IDs
+
+## Project Structure
 
 ```text
 NeuroSheet/
@@ -55,49 +78,31 @@ NeuroSheet/
     `-- utils.py
 ```
 
-## Phase 2 Features Implemented
+## Current Sample Data
 
-- Reads all `.xlsx` files from a folder
-- Skips temporary Excel lock files like `~$file.xlsx`
-- Validates missing folder and empty folder cases
-- Skips broken or empty files while continuing with valid ones
-- Merges all valid files into one raw dataframe
-- Preserves the source file name in a `source_file` column
-- Returns a load summary with file counts, skipped files, row totals, and detected columns
-- Includes a second loader for uploaded files to support later Streamlit integration
+The project currently uses this sample workbook:
 
-## Phase 3 Features Implemented
+- [Members Employer Information.xlsx](C:\Users\Hp\Downloads\NeuroSheet\data\Members%20Employer%20Information.xlsx)
 
-- Removes fully empty rows
-- Standardizes column names into lowercase snake_case
-- Trims text values and normalizes blank-like entries
-- Converts numeric-looking columns into real numeric types
-- Converts likely date columns into datetime values
-- Removes duplicate rows
-- Fills missing numeric values with median
-- Fills missing text values with `Unknown`
-- Fills missing date values from nearby available dates
-- Returns a cleaning summary describing what changed
+This file is useful for testing cleaning, grouping, and insight generation. It is not ideal for forecasting because the detected numeric field is an identifier-like member number, so prediction is intentionally skipped.
 
-## How To Test Phase 2
+## Dependencies
 
-### 1. Create sample test files
-
-Put 2 or more `.xlsx` files inside the `data/` folder.
-Example columns:
-
-- `Date`
-- `Category`
-- `Product`
-- `Sales`
-
-### 2. Install dependencies
+Install the current dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run a quick manual test in Python
+Current dependencies:
+
+- `pandas`
+- `openpyxl`
+- `scikit-learn`
+
+## How To Run The Current Backend Pipeline
+
+Start Python from the project folder:
 
 ```bash
 python
@@ -107,93 +112,54 @@ Then run:
 
 ```python
 from src.data_loader import load_excel_folder
-
-result = load_excel_folder("data")
-print(result["summary"])
-print(result["data"].head())
-```
-
-### 4. Test these cases
-
-- valid folder with 2 or more `.xlsx` files
-- folder path that does not exist
-- folder with no `.xlsx` files
-- one valid file plus one empty/broken file
-- files with slightly different columns
-
-### 5. Expected success result
-
-You should get:
-
-- one merged dataframe
-- a `source_file` column
-- summary containing files found, files loaded, skipped files, total rows loaded, detected columns
-
-## How To Test Phase 3
-
-### 1. Use the existing Phase 2 sample files
-
-The current `data/` folder already contains sample Excel files for testing.
-
-### 2. Run Python
-
-```bash
-python
-```
-
-### 3. Load and clean the merged data
-
-```python
-from src.data_loader import load_excel_folder
 from src.data_cleaner import clean_dataframe
+from src.analyzer import analyze_dataframe
+from src.insights import generate_insights
+from src.predictor import predict_trend
 
 load_result = load_excel_folder("data")
 clean_result = clean_dataframe(load_result["data"])
+analysis = analyze_dataframe(clean_result["data"])
+insights = generate_insights(clean_result["data"], analysis)
+prediction = predict_trend(
+    clean_result["data"],
+    analysis["selected_columns"]["target_column"],
+    analysis["selected_columns"]["date_column"],
+)
 
+print(load_result["summary"])
 print(clean_result["summary"])
-print(clean_result["data"].head())
+print(analysis["summary_metrics"])
+print(insights)
+print(prediction)
 ```
 
-### 4. Test these cases
+## Expected Result With Current Sample File
 
-- data with column names like `Sales Amount`, ` sales `, or `SALES`
-- duplicate rows across files
-- missing numeric values
-- missing text values
-- optional date column with real date values
-- files with slightly different columns
+With the current member dataset, you should see:
 
-### 5. Expected success result
+- successful loading and cleaning
+- grouped analysis on a useful categorical column such as `region`
+- human-readable insights about dataset structure and dominant groups
+- prediction skipped with a safe message because `member_customer_number` is treated as an identifier
 
-You should get:
+## Testing Notes
 
-- cleaned dataframe with standardized column names
-- duplicate rows removed
-- missing values filled
-- likely date columns converted
-- a summary explaining what cleaning steps were applied
+The backend has already been verified against:
 
-## Merge Workflow From Now On
+- the real member workbook in `data/`
+- numeric/date-rich synthetic datasets
+- text-only datasets
+- too-few-data prediction cases
+- identifier-like numeric columns
 
-You asked to work directly on `main` from now on.
-Recommended flow for each phase:
+## Next Planned Work
 
-1. Implement the phase on `main`
-2. Test the phase locally
-3. Commit changes clearly
-4. Push `main` to GitHub
-5. Start the next phase on the same branch
+The next phase is Phase 7:
 
-## Current Commit Direction
-
-Phase 2 used a commit message like:
-
-```text
-feat: add multi-file excel loading pipeline
-```
-
-Phase 3 should use a commit message like:
-
-```text
-feat: add data cleaning and standardization pipeline
-```
+- Streamlit dashboard UI
+- user interaction flow
+- data preview
+- summary display
+- chart integration
+- premium frontend styling
