@@ -38,6 +38,7 @@ NeuroSheet is designed to help a user:
 - Interactive black-and-gold dashboard with dark and light appearance modes
 - Dedicated group comparison, contribution share, and timeline visual analytics
 - CSV and text report download actions
+- Saved export artifacts written to the `outputs/` folder
 
 ## Expected Input Format
 
@@ -135,6 +136,14 @@ Implemented in `app.py`:
 - findings and forecast panels
 - export/download controls
 
+### Export Module
+
+Implemented in `src/exporter.py`:
+
+- writes cleaned CSV output into `outputs/`
+- writes a plain-text report into `outputs/`
+- returns saved artifact paths to the dashboard
+
 ## How To Run
 
 ### 1. Install dependencies
@@ -156,6 +165,7 @@ streamlit run app.py
 3. Click `Analyze Data`.
 4. Review the cleaned dataset, metrics, findings, and forecast section.
 5. Download the cleaned CSV or summary report.
+6. Optionally save both artifacts directly into the `outputs/` folder.
 
 ## Showcase Mode
 
@@ -202,6 +212,7 @@ When reviewing the UI, verify the following:
 - grouped analysis and trend sections render correctly
 - forecast output appears when the dataset supports it, or shows guidance when it does not
 - download buttons return the cleaned CSV and text report
+- save-to-folder export writes files into `outputs/`
 
 ## Current Constraints
 
@@ -209,7 +220,7 @@ When reviewing the UI, verify the following:
 - forecast quality depends entirely on the quality of the input columns
 - a dataset without a meaningful numeric business metric will not produce a forecast
 - a dataset without a date field will not produce timeline forecasting
-- dedicated export/report modules and automated tests are still pending
+- automated tests are still pending
 
 ## Presentation Positioning
 

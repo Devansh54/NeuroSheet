@@ -13,6 +13,7 @@ import streamlit as st
 from src.analyzer import DataAnalysisError, analyze_dataframe
 from src.data_cleaner import DataCleaningError, clean_dataframe
 from src.data_loader import DataLoadError, load_excel_folder, load_uploaded_excel_files
+from src.exporter import ExportError, export_results
 from src.insights import generate_insights
 from src.predictor import PredictionError, predict_trend
 from src.utils import format_value
@@ -870,6 +871,19 @@ def run_pipeline(
     }
 
 
+def save_outputs(results: dict[str, Any]) -> dict[str, Any]:
+    """Persist current results into the outputs directory."""
+    return export_results(
+        cleaned_data=results["clean"]["data"],
+        load_summary=results["load"]["summary"],
+        clean_summary=results["clean"]["summary"],
+        analysis_result=results["analysis"],
+        insights=results["insights"],
+        prediction=results["prediction"],
+        output_dir="outputs",
+    )
+
+
 def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
     """Render sidebar controls and return the selected inputs."""
     st.sidebar.markdown("## Workspace")
@@ -1341,6 +1355,39 @@ def render_export_section(results: dict[str, Any]) -> None:
     cleaned_data = results["clean"]["data"]
     insights = results["insights"]
     prediction = results["prediction"]
+
+    st.markdown('<div class="panel-card">', unsafe_allow_html=True)
+    save_clicked = st.button("Save outputs to outputs folder", use_container_width=True)
+    if save_clicked:
+        try:
+            st.session_state["export_result"] = save_outputs(results)
+        except ExportError as error:
+            st.session_state["export_result"] = {"status": "error", "message": str(error)}
+
+    export_result = st.session_state.get("export_result")
+    if export_result:
+        if export_result["status"] == "success":
+            st.markdown(
+                f"""
+                <div class="status-note">
+                    <strong>Exports saved</strong>
+                    CSV: {export_result['cleaned_data_path']}<br>
+                    Report: {export_result['report_path']}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f"""
+                <div class="status-note">
+                    <strong>Export failed</strong>
+                    {export_result['message']}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
