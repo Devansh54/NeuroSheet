@@ -71,7 +71,9 @@ def choose_default_columns(dataframe: pd.DataFrame) -> dict[str, str | None]:
     numeric_candidates = [
         column
         for column in column_types["numeric"]
-        if column != "source_file" and dataframe[column].nunique(dropna=True) > 1
+        if column != "source_file"
+        and dataframe[column].nunique(dropna=True) > 1
+        and not is_identifier_like(column)
     ]
     categorical_candidates = [
         column
@@ -80,8 +82,6 @@ def choose_default_columns(dataframe: pd.DataFrame) -> dict[str, str | None]:
     ]
 
     target_column = _pick_by_keywords(numeric_candidates, TARGET_KEYWORDS)
-    if not target_column and numeric_candidates:
-        target_column = numeric_candidates[0]
 
     group_column = _pick_by_keywords(categorical_candidates, GROUP_KEYWORDS)
     if not group_column and categorical_candidates:

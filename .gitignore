@@ -1,5 +1,6 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
+.DS_Store
 .venv/
 outputs/*
 !outputs/.gitkeep
