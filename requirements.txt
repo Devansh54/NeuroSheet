@@ -1,1 +1,2 @@
-﻿# Dependencies will be finalized during implementation phases.
+﻿pandas
+openpyxl

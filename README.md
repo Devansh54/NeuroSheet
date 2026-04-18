@@ -2,10 +2,11 @@
 
 NeuroSheet AI is a Python-based project that will transform multiple Excel files into meaningful insights, visual analytics, and future predictions through an interactive dashboard.
 
-## Phase 1 Status
+## Current Status
 
-This repository is currently initialized with the project foundation only.
-No feature implementation has been added yet.
+- Phase 1 complete: project foundation finalized
+- Phase 2 complete: multi-file Excel data pipeline implemented
+- Phase 3 onward: pending
 
 ## Finalized Project Scope
 
@@ -22,16 +23,16 @@ The complete project will include:
 
 ## Expected Excel Format
 
-The project will assume the following:
+The project currently assumes:
 
-- Input files will be `.xlsx` Excel files
+- Input files are `.xlsx` Excel files
 - Files should represent the same type of dataset
 - Same columns across files are preferred
-- Small column differences are acceptable during merge
-- At least one numeric column should exist for meaningful analysis
+- Small column differences are allowed during merge
+- At least one numeric column should exist for meaningful analysis later
 - A date column is optional
-- Column names may vary in spacing/case and will be standardized later
-- Source file name tracking will be preserved during merge
+- Column names may vary in spacing/case and will be standardized in Phase 3
+- The pipeline adds a `source_file` column automatically
 
 ## Frozen Project Structure
 
@@ -53,43 +54,82 @@ NeuroSheet/
     `-- utils.py
 ```
 
-## Module List
+## Phase 2 Features Implemented
 
-- `app.py`: Streamlit dashboard entry point
-- `src/data_loader.py`: Excel loading and merging
-- `src/data_cleaner.py`: cleaning and standardization
-- `src/analyzer.py`: summary calculations and grouping
-- `src/insights.py`: human-readable insight generation
-- `src/predictor.py`: prediction logic
-- `src/utils.py`: shared helper functions
+- Reads all `.xlsx` files from a folder
+- Skips temporary Excel lock files like `~$file.xlsx`
+- Validates missing folder and empty folder cases
+- Skips broken or empty files while continuing with valid ones
+- Merges all valid files into one raw dataframe
+- Preserves the source file name in a `source_file` column
+- Returns a load summary with file counts, skipped files, row totals, and detected columns
+- Includes a second loader for uploaded files to support later Streamlit integration
 
-## Git Workflow
+## How To Test Phase 2
 
-- Stable branch: `main`
-- Phase 1 to Phase 5 working branch: `feature/phase1-phase5-backend`
-- Phase 6 to Phase 10 working branch: `feature/phase6-phase10-frontend`
-- Merge tested work into `main`
-- Use clear commit names such as `feat:` `chore:` and `docs:`
+### 1. Create sample test files
 
-## Phase Split
+Put 2 or more `.xlsx` files inside the `data/` folder.
+Example columns:
 
-### Phase 1 to Phase 5
+- `Date`
+- `Category`
+- `Product`
+- `Sales`
 
-- Project foundation
-- Data pipeline
-- Data cleaning
-- Analysis engine
-- Insight engine
+### 2. Install dependencies
 
-### Phase 6 to Phase 10
+```bash
+pip install -r requirements.txt
+```
 
-- Prediction module
-- Dashboard UI/UX
-- Visualizations
-- Export/reporting
-- Testing and polish
+### 3. Run a quick manual test in Python
 
-## Setup Notes
+```bash
+python
+```
 
-The repository structure is initialized now so development can begin in later phases.
-Actual implementation will be added after the foundation phase.
+Then run:
+
+```python
+from src.data_loader import load_excel_folder
+
+result = load_excel_folder("data")
+print(result["summary"])
+print(result["data"].head())
+```
+
+### 4. Test these cases
+
+- valid folder with 2 or more `.xlsx` files
+- folder path that does not exist
+- folder with no `.xlsx` files
+- one valid file plus one empty/broken file
+- files with slightly different columns
+
+### 5. Expected success result
+
+You should get:
+
+- one merged dataframe
+- a `source_file` column
+- summary containing files found, files loaded, skipped files, total rows loaded, detected columns
+
+## Merge Workflow From Now On
+
+You asked to work directly on `main` from now on.
+Recommended flow for each phase:
+
+1. Implement the phase on `main`
+2. Test the phase locally
+3. Commit changes clearly
+4. Push `main` to GitHub
+5. Start the next phase on the same branch
+
+## Current Commit Direction
+
+Phase 2 should use a commit message like:
+
+```text
+feat: add multi-file excel loading pipeline
+```
