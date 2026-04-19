@@ -1,58 +1,77 @@
-# NeuroSheet AI
+# NeuroSheet
 
-NeuroSheet AI is a Python-based Excel analysis project that converts raw workbooks into a cleaned dataset, summary metrics, readable insights, simple forecasting output, and an interactive dashboard for demonstration.
+NeuroSheet is a Python-based Excel analysis system that loads one or more Excel workbooks, cleans and standardizes the merged dataset, generates summary analysis and plain-English insights, produces simple forecasting when the data supports it, and presents the full workflow through an interactive Streamlit dashboard.
 
-## Project Snapshot
+This project is built as a Python mini project with a strong focus on practical data processing, readable output, and a polished presentation layer.
 
-NeuroSheet is designed to help a user:
+## Project Objective
 
-- load one or more Excel files
-- merge and clean the dataset
-- inspect high-level analysis results
-- read plain-English findings
-- view grouped and trend-oriented summaries
-- generate a basic forecast when the data structure supports it
-- export the cleaned dataset and a summary report
+The objective of NeuroSheet is to simplify spreadsheet-based analysis for users who work with raw Excel files but may not have advanced technical or analytics expertise. The project is designed to take scattered workbook data, clean it into a consistent structure, extract useful summaries, generate readable insights, support simple forecasting, and present the full result in a professional dashboard that is easy to demonstrate and evaluate.
 
-## Current Implementation Status
+## What It Does
 
-- Phase 1 complete: project scope, structure, and workflow finalized
-- Phase 2 complete: Excel ingestion and merge pipeline implemented
-- Phase 3 complete: cleaning and standardization pipeline implemented
-- Phase 4 complete: analysis engine implemented
-- Phase 5 complete: human-readable insight generation implemented
-- Phase 6 complete: linear regression forecasting module implemented
-- Phase 7 complete: interactive Streamlit dashboard implemented
-- Phase 8 complete: visual analytics and chart refinement implemented
-- Phase 9 complete: export and reporting workflow implemented
-- Phase 10 complete: testing and final polish implemented
+- Loads one or more `.xlsx` files from a folder or file upload
+- Merges multiple workbooks into one dataset
+- Tracks the origin of each row using a `source_file` column
+- Standardizes raw column names into lowercase snake_case
+- Converts likely numeric and date-like fields automatically
+- Removes duplicate rows and fills missing values safely
+- Detects useful default columns for analysis, grouping, and forecasting
+- Generates summary metrics such as totals, averages, minimums, maximums, and counts
+- Builds grouped analysis for columns such as region, category, type, or similar fields
+- Generates plain-English insights from the cleaned dataset
+- Runs linear-regression-based prediction when the dataset has enough usable structure
+- Visualizes comparison, share, and trend patterns in the dashboard
+- Exports cleaned data and a text report
 
-## Core Features
+## Key Features
 
-- Multi-file Excel loading from folder path or uploads
-- Source file tracking through a `source_file` column
-- Column normalization and data cleaning
-- Duplicate removal and missing-value handling
-- Numeric and date-like column detection
-- Summary analysis and grouped breakdowns
-- Plain-English insight generation
-- Forecast readiness and prediction support
-- Interactive black-and-gold dashboard with dark and light appearance modes
-- Dedicated group comparison, contribution share, and timeline visual analytics
-- CSV and text report download actions
-- Saved export artifacts written to the `outputs/` folder
-- Pytest coverage for core pipeline and export modules
+### Data Ingestion
 
-## Expected Input Format
+- Folder-based Excel loading
+- Multi-file upload support in the dashboard
+- Invalid or empty file handling
+- Source file tracking
 
-NeuroSheet currently assumes:
+### Data Cleaning
 
-- input files are `.xlsx` workbooks
-- files represent the same type of dataset
-- identical columns are preferred, but minor variation is tolerated
-- at least one meaningful numeric business field is needed for strong analysis
-- a date column is optional, but recommended for trend analysis and forecasting
-- column names may vary in spacing or case and are standardized during cleaning
+- Column renaming and normalization
+- Text cleanup and blank-value normalization
+- Numeric conversion for columns that are mostly numeric
+- Date conversion for columns that behave like dates
+- Duplicate removal
+- Missing-value filling with beginner-friendly defaults
+
+### Analysis Engine
+
+- Dataset size and schema summary
+- Numeric column statistics
+- Grouped breakdowns
+- Top-record detection
+- Timeline summary when a usable date column exists
+
+### Insight Engine
+
+- Human-readable dataset summary
+- Group-wise insight generation
+- Distribution and imbalance observations
+- Trend commentary
+- Data quality warnings for incomplete fields
+
+### Prediction Module
+
+- Linear regression forecasting with date-based prediction when a valid date column exists
+- Sequential fallback prediction when date data is not available but a usable numeric series exists
+- Safe unavailable-state messaging when forecasting would be misleading
+
+### Dashboard
+
+- Streamlit-based interactive interface
+- Folder, Upload, and Showcase input modes
+- Dark and light theme support
+- Premium black-and-gold visual style
+- Responsive cards, tables, and chart sections
+- Export and download actions from the dashboard
 
 ## Project Structure
 
@@ -63,101 +82,74 @@ NeuroSheet/
 |-- README.md
 |-- .gitignore
 |-- data/
+|-- demo_assets/
 |-- outputs/
+|-- tests/
 `-- src/
     |-- __init__.py
-    |-- data_loader.py
-    |-- data_cleaner.py
     |-- analyzer.py
+    |-- data_cleaner.py
+    |-- data_loader.py
+    |-- exporter.py
     |-- insights.py
     |-- predictor.py
     `-- utils.py
 ```
 
-## Verified Modules
+## Core Modules
 
-### Data Loading
+### `src/data_loader.py`
 
-Implemented in `src/data_loader.py`:
+Responsible for reading Excel files from a local folder or dashboard uploads, validating them, skipping unusable files, merging valid files, and generating a load summary.
 
-- loads `.xlsx` files from a folder
-- supports uploaded files for the dashboard
-- skips temporary Excel lock files
-- merges valid data into one dataframe
-- returns load summary and skipped-file reasons
+### `src/data_cleaner.py`
 
-### Data Cleaning
+Responsible for cleaning the merged dataset by standardizing columns, normalizing text, converting numeric and date-like columns, removing duplicates, filling missing values, and producing a cleaning summary.
 
-Implemented in `src/data_cleaner.py`:
+### `src/analyzer.py`
 
-- standardizes column names
-- normalizes text values
-- converts likely numeric and date columns
-- removes duplicate rows
-- fills missing values with safe defaults
-- returns a cleaning summary
+Responsible for summary analysis including row and column counts, numeric overview, grouped aggregation, timeline summaries, and top-record detection.
 
-### Analysis
+### `src/insights.py`
 
-Implemented in `src/analyzer.py`:
+Responsible for turning raw analysis output into simple, readable insight statements suitable for dashboard display and project demonstration.
 
-- row and column counts
-- numeric overview
-- grouped summary
-- top-record detection
-- trend summary when date data exists
+### `src/predictor.py`
 
-### Insights
+Responsible for running linear-regression-based forecasting when the dataset contains enough structured information.
 
-Implemented in `src/insights.py`:
+### `src/exporter.py`
 
-- dataset shape summary
-- grouped-result explanation
-- trend observation
-- data quality flags
-- human-readable finding generation
+Responsible for exporting the cleaned dataset to CSV and generating a plain-text report in the `outputs/` folder.
 
-### Forecasting
+### `app.py`
 
-Implemented in `src/predictor.py`:
+Responsible for the Streamlit dashboard, input workflow, data preview, metrics display, visuals, insight section, prediction panel, and export actions.
 
-- date-based linear regression forecasting
-- sequential fallback forecasting
-- unavailable-state handling when the dataset is not forecast-ready
+## Technology Stack
 
-### Dashboard
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- OpenPyXL
+- Streamlit
+- Altair
+- Pytest
 
-Implemented in `app.py`:
+## Expected Input
 
-- folder and upload input flow
-- dark/light appearance control
-- separate showcase mode for demonstrations
-- preview tables
-- processing summary cards
-- grouped and trend summary sections
-- dedicated visual analytics section with comparison, share, and timeline charts
-- findings and forecast panels
-- export/download controls
+NeuroSheet works best when:
 
-### Export Module
+- input files are `.xlsx` workbooks
+- files represent the same type of business or operational dataset
+- columns are mostly similar across files
+- at least one meaningful numeric column exists for stronger analysis
+- a date column exists if timeline analysis and forecasting are required
 
-Implemented in `src/exporter.py`:
+The project can still operate with imperfect files, but richer structure produces better insights and more complete output.
 
-- writes cleaned CSV output into `outputs/`
-- writes a plain-text report into `outputs/`
-- returns saved artifact paths to the dashboard
-
-### Testing
-
-Implemented in `tests/`:
-
-- loader coverage
-- cleaner coverage
-- analyzer coverage
-- predictor coverage
-- exporter coverage
-
-## How To Run
+## How To Run Locally
 
 ### 1. Install dependencies
 
@@ -173,73 +165,134 @@ streamlit run app.py
 
 ### 3. Use the workflow
 
-1. Choose `Folder` mode or `Upload` mode.
-2. Provide one or more Excel files.
+1. Select `Folder`, `Upload`, or `Showcase` mode.
+2. Provide Excel files or use the built-in showcase dataset.
 3. Click `Analyze Data`.
-4. Review the cleaned dataset, metrics, findings, and forecast section.
-5. Download the cleaned CSV or summary report.
-6. Optionally save both artifacts directly into the `outputs/` folder.
+4. Review the cleaned dataset, metrics, charts, insights, and prediction output.
+5. Download the cleaned CSV or generated report.
 
-## Showcase Mode
+## Dashboard Workflow
 
-Use the `Showcase` mode in the dashboard when you want to demonstrate:
+### Folder Mode
 
-- valid date-driven trend analysis
+Use a folder that contains one or more `.xlsx` files. The project loads all valid Excel files in that folder and merges them.
+
+### Upload Mode
+
+Upload one or more Excel files directly into the dashboard for quick testing without changing the local data folder.
+
+### Showcase Mode
+
+Use showcase mode during demo or viva when you need to clearly demonstrate:
+
+- grouped analysis
 - timeline summary
-- grouped visual analytics
-- forecast output with a proper numeric business metric
+- charts and trends
+- forecasting behavior with a valid numeric target
 
-## Manual Backend Check
+This mode is useful because some real-world datasets may not contain the structure needed to show every feature clearly.
 
-Open Python and run:
+## Demo Screenshots
 
-```python
-from src.data_loader import load_excel_folder
-from src.data_cleaner import clean_dataframe
-from src.analyzer import analyze_dataframe
-from src.insights import generate_insights
-from src.predictor import predict_trend
+Add final screenshots here before submission or deployment sharing.
 
-load_result = load_excel_folder("data")
-clean_result = clean_dataframe(load_result["data"])
-analysis_result = analyze_dataframe(clean_result["data"])
-insight_result = generate_insights(clean_result["data"], analysis_result)
-prediction_result = predict_trend(clean_result["data"])
+Suggested captures:
 
-print(load_result["summary"])
-print(clean_result["summary"])
-print(analysis_result["summary_metrics"])
-print(insight_result)
-print(prediction_result)
+1. Hero section and input workflow
+2. Processing summary, dataset preview, and executive metrics
+3. Charts, insights, prediction, and export sections
+
+Suggested captions:
+
+- `Dashboard home with workbook ingestion workflow`
+- `Cleaned dataset review with metrics and grouped analysis`
+- `Visual analytics, forecasting, and export output`
+
+## Output Produced
+
+NeuroSheet can produce:
+
+- a cleaned merged dataset
+- summary metrics
+- grouped analysis tables
+- trend summaries
+- plain-English insight statements
+- prediction output with method, next label, predicted value, direction, and fit score
+- downloadable CSV export
+- downloadable text report
+
+## Export Behavior
+
+Two export paths are supported:
+
+- Browser download from the dashboard
+- File save into the local `outputs/` folder
+
+For local use, both are valid. For deployed Streamlit apps, browser download should be treated as the main export path because server-side files are not guaranteed to persist permanently across sessions.
+
+## Testing
+
+The project includes automated tests for the core pipeline:
+
+- data loading
+- data cleaning
+- analysis
+- prediction
+- export
+
+Run the test suite with:
+
+```bash
+pytest -q
 ```
 
-## Dashboard Review Checklist
+## Current Limitations
 
-When reviewing the UI, verify the following:
+- Only `.xlsx` files are supported
+- Forecasting depends on the presence of a meaningful numeric field
+- Date-based trend analysis depends on a valid date column
+- Forecast output is intentionally simple and uses linear regression only
+- The project includes backend test coverage, but not automated browser-level UI testing
 
-- the page loads without layout breakage
-- dark mode and light mode both remain readable
-- folder mode works with the `data/` folder
-- upload mode accepts `.xlsx` files
-- preview tables show toolbar actions
-- grouped analysis and trend sections render correctly
-- forecast output appears when the dataset supports it, or shows guidance when it does not
-- download buttons return the cleaned CSV and text report
-- save-to-folder export writes files into `outputs/`
-- pytest suite passes for the core modules
+## Submission Notes
 
-## Current Constraints
+For project submission or viva, present NeuroSheet as:
 
-- only `.xlsx` files are supported
-- forecast quality depends entirely on the quality of the input columns
-- a dataset without a meaningful numeric business metric will not produce a forecast
-- a dataset without a date field will not produce timeline forecasting
-- automated UI/browser tests are still pending
+**a Python-based Excel intelligence system with an interactive dashboard for analysis, insights, visualization, forecasting, and export**
 
-## Presentation Positioning
+That framing keeps the project centered on Python data processing and analysis rather than presenting it as only a UI exercise.
 
-For submission or viva, present NeuroSheet as:
+## Future Scope
 
-**a Python-based Excel intelligence system with an interactive dashboard for analysis, insights, and forecasting**
+Possible future improvements for NeuroSheet include:
 
-This keeps the project centered on Python data processing rather than presenting it as only a UI project.
+- support for `.csv` and additional spreadsheet formats
+- smarter column-matching across files with inconsistent schemas
+- advanced forecasting models beyond linear regression
+- user-controlled target, group, and date column selection for deeper analysis
+- downloadable PDF or presentation-style reports
+- authentication and persistent project history for multi-user scenarios
+- automated UI testing for full dashboard validation
+
+## Deployment
+
+This project can be deployed using Streamlit Community Cloud.
+
+Recommended deployment setup:
+
+1. Push the final project to GitHub.
+2. Open Streamlit Community Cloud.
+3. Create a new app from the GitHub repository.
+4. Select the main branch.
+5. Use `app.py` as the entrypoint.
+6. Deploy and verify the dashboard using Folder, Upload, and Showcase modes.
+
+## Final Readiness Checklist
+
+- `requirements.txt` is complete
+- README matches the implemented project
+- test suite passes
+- dashboard runs locally
+- exports work
+- showcase mode demonstrates the full capability set
+- real dataset and demo assets are kept separate for clarity
