@@ -4,6 +4,12 @@ NeuroSheet is a Python-based Excel analysis system that loads one or more Excel 
 
 This project is built as a Python mini project with a strong focus on practical data processing, readable output, and a polished presentation layer.
 
+## Live Demo
+
+Deployed application:
+
+[https://neurosheet-ai.streamlit.app](https://neurosheet-ai.streamlit.app)
+
 ## Project Objective
 
 The objective of NeuroSheet is to simplify spreadsheet-based analysis for users who work with raw Excel files but may not have advanced technical or analytics expertise. The project is designed to take scattered workbook data, clean it into a consistent structure, extract useful summaries, generate readable insights, support simple forecasting, and present the full result in a professional dashboard that is easy to demonstrate and evaluate.
@@ -276,16 +282,20 @@ Possible future improvements for NeuroSheet include:
 
 ## Deployment
 
-This project can be deployed using Streamlit Community Cloud.
+NeuroSheet is deployed on Streamlit Community Cloud.
 
-Recommended deployment setup:
+- Live app: [https://neurosheet-ai.streamlit.app](https://neurosheet-ai.streamlit.app)
+- Entrypoint: `app.py`
+- Branch: `main`
 
-1. Push the final project to GitHub.
+If you want to redeploy or clone the setup:
+
+1. Push the project to GitHub.
 2. Open Streamlit Community Cloud.
-3. Create a new app from the GitHub repository.
-4. Select the main branch.
-5. Use `app.py` as the entrypoint.
-6. Deploy and verify the dashboard using Folder, Upload, and Showcase modes.
+3. Create a new app from the repository.
+4. Select branch `main`.
+5. Set the main file path to `app.py`.
+6. Deploy and verify Folder, Upload, and Showcase modes.
 
 ## Final Readiness Checklist
 
