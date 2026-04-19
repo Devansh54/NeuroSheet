@@ -27,3 +27,19 @@ def test_analyze_dataframe_handles_categorical_only_grouping() -> None:
 
     assert result["summary_metrics"]["group_column"] == "region"
     assert "record_count" in result["grouped_summary"].columns
+
+
+def test_analyze_dataframe_picks_first_meaningful_numeric_target_without_keyword_match() -> None:
+    dataframe = pd.DataFrame(
+        {
+            "region": ["North", "South", "North"],
+            "units": [10, 15, 20],
+            "is_active": [True, False, True],
+        }
+    )
+
+    result = analyze_dataframe(dataframe)
+
+    assert result["summary_metrics"]["target_column"] == "units"
+    assert result["summary_metrics"]["numeric_column_count"] == 1
+    assert result["summary_metrics"]["target_total"] == 45.0

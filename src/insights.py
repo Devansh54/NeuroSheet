@@ -16,6 +16,13 @@ def _pretty_name(column_name: str | None) -> str:
     return column_name.replace("_", " ")
 
 
+def _format_group_value(value: Any) -> str:
+    """Format grouped values safely for readable text."""
+    if pd.isna(value):
+        return "Unknown"
+    return str(value)
+
+
 def _summarize_dataset_shape(analysis_results: dict[str, Any]) -> str:
     """Create a high-level overview of the cleaned dataset."""
     metrics = analysis_results["summary_metrics"]
@@ -58,13 +65,13 @@ def _summarize_grouping(analysis_results: dict[str, Any]) -> str | None:
     top_group = grouped_summary.iloc[0]
     if "total_value" in grouped_summary.columns and target_column and not is_identifier_like(target_column):
         return (
-            f"The strongest {_pretty_name(group_column)} is {top_group[group_column]} with "
+            f"The leading {_pretty_name(group_column)} is {_format_group_value(top_group[group_column])} with "
             f"a total {_pretty_name(target_column)} of {format_value(top_group['total_value'])} "
             f"across {format_value(int(top_group['record_count']))} records."
         )
 
     return (
-        f"The most common {_pretty_name(group_column)} is {top_group[group_column]} with "
+        f"The most common {_pretty_name(group_column)} is {_format_group_value(top_group[group_column])} with "
         f"{format_value(int(top_group['record_count']))} records."
     )
 
@@ -84,13 +91,13 @@ def _summarize_distribution(analysis_results: dict[str, Any]) -> str | None:
     if "total_value" in grouped_summary.columns and target_column and not is_identifier_like(target_column):
         return (
             f"There is a visible gap between {_pretty_name(group_column)} groups: "
-            f"{top_group[group_column]} leads with {format_value(top_group['total_value'])}, "
-            f"while {bottom_group[group_column]} is at {format_value(bottom_group['total_value'])}."
+            f"{_format_group_value(top_group[group_column])} leads with {format_value(top_group['total_value'])}, "
+            f"while {_format_group_value(bottom_group[group_column])} is at {format_value(bottom_group['total_value'])}."
         )
 
     return (
         f"The {_pretty_name(group_column)} distribution is uneven: "
-        f"{top_group[group_column]} appears most often, while {bottom_group[group_column]} appears least often "
+        f"{_format_group_value(top_group[group_column])} appears most often, while {_format_group_value(bottom_group[group_column])} appears least often "
         f"within the top grouped results."
     )
 
@@ -147,8 +154,10 @@ def _summarize_quality_flags(dataframe: pd.DataFrame) -> str | None:
         return None
 
     column_name, count = max(unknown_columns, key=lambda item: item[1])
+    unknown_ratio = count / max(len(dataframe), 1)
+    severity_text = "A large share of the rows still rely on fallback values." if unknown_ratio >= 0.4 else "Some fields were incomplete in the source data."
     return (
-        f"Some fields were incomplete in the source data. "
+        f"{severity_text} "
         f"The column {_pretty_name(column_name)} still contains {format_value(count)} fallback values marked as Unknown."
     )
 
@@ -164,7 +173,7 @@ def _summarize_top_record(analysis_results: dict[str, Any]) -> str | None:
 
     group_text = ""
     if group_column and group_column in top_record:
-        group_text = f" in {_pretty_name(group_column)} {top_record[group_column]}"
+        group_text = f" in {_pretty_name(group_column)} {_format_group_value(top_record[group_column])}"
 
     return (
         f"The single highest {_pretty_name(target_column)} value is {format_value(top_record[target_column])}{group_text}."

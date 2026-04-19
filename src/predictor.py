@@ -27,7 +27,64 @@ def _build_unavailable(reason: str) -> dict[str, Any]:
         "next_label": None,
         "direction": None,
         "r2_score": None,
+        "confidence_note": None,
         "historical_data": pd.DataFrame(),
+    }
+
+
+def _build_confidence_note(r2_score: float, historical_points: int, prediction_basis: str) -> str:
+    """Summarize forecast reliability in plain language."""
+    basis_text = "time-based" if prediction_basis == "date" else "sequence-based"
+
+    if historical_points < 4:
+        strength = "limited"
+    elif historical_points < 6:
+        strength = "moderate"
+    else:
+        strength = "broader"
+
+    if r2_score >= 0.85:
+        fit_text = "The fitted trend is strong"
+    elif r2_score >= 0.55:
+        fit_text = "The fitted trend is reasonably stable"
+    else:
+        fit_text = "The fitted trend is weak"
+
+    return f"{fit_text} on a {basis_text} model using {strength} history, so treat this as directional guidance."
+
+
+def _finalize_prediction(
+    *,
+    method: str,
+    historical_points: int,
+    prediction_basis: str,
+    predicted_value: float,
+    next_label: str,
+    direction: str,
+    r2_score: float,
+    historical_data: pd.DataFrame,
+    target_series: pd.Series,
+) -> dict[str, Any]:
+    """Build the final prediction payload with business-friendly safeguards."""
+    adjusted_value = predicted_value
+    confidence_note = _build_confidence_note(r2_score, historical_points, prediction_basis)
+
+    if float(target_series.min()) >= 0 and adjusted_value < 0:
+        adjusted_value = 0.0
+        confidence_note += " Negative output was clipped to zero because the historical metric never goes below zero."
+
+    return {
+        "available": True,
+        "reason": None,
+        "method": method,
+        "historical_points": int(historical_points),
+        "prediction_basis": prediction_basis,
+        "predicted_value": round(adjusted_value, 2),
+        "next_label": next_label,
+        "direction": direction,
+        "r2_score": round(r2_score, 3),
+        "confidence_note": confidence_note,
+        "historical_data": historical_data,
     }
 
 
@@ -85,18 +142,17 @@ def _predict_from_dates(
     else:
         direction = "stable"
 
-    return {
-        "available": True,
-        "reason": None,
-        "method": "Linear Regression",
-        "historical_points": int(len(trend_frame)),
-        "prediction_basis": "date",
-        "predicted_value": round(predicted_value, 2),
-        "next_label": next_date.strftime("%Y-%m-%d"),
-        "direction": direction,
-        "r2_score": round(r2_score, 3),
-        "historical_data": trend_frame,
-    }
+    return _finalize_prediction(
+        method="Linear Regression",
+        historical_points=int(len(trend_frame)),
+        prediction_basis="date",
+        predicted_value=predicted_value,
+        next_label=next_date.strftime("%Y-%m-%d"),
+        direction=direction,
+        r2_score=r2_score,
+        historical_data=trend_frame,
+        target_series=trend_frame["total_value"],
+    )
 
 
 def _predict_from_sequence(
@@ -130,18 +186,17 @@ def _predict_from_sequence(
     else:
         direction = "stable"
 
-    return {
-        "available": True,
-        "reason": None,
-        "method": "Linear Regression",
-        "historical_points": int(len(series)),
-        "prediction_basis": "sequence",
-        "predicted_value": round(predicted_value, 2),
-        "next_label": f"Period {int(next_index + 1)}",
-        "direction": direction,
-        "r2_score": round(r2_score, 3),
-        "historical_data": historical_data,
-    }
+    return _finalize_prediction(
+        method="Linear Regression",
+        historical_points=int(len(series)),
+        prediction_basis="sequence",
+        predicted_value=predicted_value,
+        next_label=f"Period {int(next_index + 1)}",
+        direction=direction,
+        r2_score=r2_score,
+        historical_data=historical_data,
+        target_series=series,
+    )
 
 
 def predict_trend(

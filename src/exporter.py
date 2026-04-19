@@ -43,6 +43,8 @@ def build_report_text(
         f"- Files found: {load_summary['files_found']}",
         f"- Files loaded: {load_summary['files_loaded']}",
         f"- Rows loaded: {load_summary['total_rows_loaded']}",
+        f"- Loaded file names: {', '.join(load_summary.get('loaded_file_names', [])) or 'None'}",
+        f"- Skipped files: {len(load_summary.get('skipped_files', []))}",
         "",
         "Cleaning Summary",
         f"- Final rows: {clean_summary['final_rows']}",
@@ -61,6 +63,12 @@ def build_report_text(
         "",
         "Insights",
     ]
+    for skipped_file in load_summary.get("skipped_files", []):
+        lines.append(f"- Skipped detail: {skipped_file.get('file', 'Unknown file')} -> {skipped_file.get('reason', 'No reason provided')}")
+
+    if load_summary.get("skipped_files"):
+        lines.append("")
+
     lines.extend(f"- {insight}" for insight in insights)
     lines.extend(["", "Forecast"])
     if prediction["available"]:
@@ -71,6 +79,7 @@ def build_report_text(
                 f"- Predicted value: {prediction['predicted_value']}",
                 f"- Direction: {prediction['direction']}",
                 f"- R2 score: {prediction['r2_score']}",
+                f"- Confidence note: {prediction.get('confidence_note') or 'Not available'}",
             ]
         )
     else:

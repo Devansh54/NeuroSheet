@@ -21,9 +21,27 @@ def _standardize_column_name(column_name: Any) -> str:
 
 def _rename_columns(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str]]:
     """Rename columns into a standard format."""
-    rename_map = {column: _standardize_column_name(column) for column in dataframe.columns}
+    rename_map: dict[str, str] = {}
+    renamed_columns: list[str] = []
+    original_name_counts: dict[str, int] = {}
+    standardized_name_counts: dict[str, int] = {}
+
+    for column in dataframe.columns:
+        original_label = str(column)
+        original_count = original_name_counts.get(original_label, 0) + 1
+        original_name_counts[original_label] = original_count
+
+        base_name = _standardize_column_name(column)
+        standardized_count = standardized_name_counts.get(base_name, 0) + 1
+        standardized_name_counts[base_name] = standardized_count
+        resolved_name = base_name if standardized_count == 1 else f"{base_name}_{standardized_count}"
+
+        summary_key = original_label if original_count == 1 else f"{original_label} [{original_count}]"
+        rename_map[summary_key] = resolved_name
+        renamed_columns.append(resolved_name)
+
     renamed = dataframe.copy()
-    renamed.rename(columns=rename_map, inplace=True)
+    renamed.columns = renamed_columns
     return renamed, rename_map
 
 

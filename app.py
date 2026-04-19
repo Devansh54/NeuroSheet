@@ -182,10 +182,36 @@ def build_theme_css(mode: str) -> str:
             background: {palette['sidebar_bg']};
             border-right: 1px solid var(--border);
             transition: background 240ms ease;
+            padding-top: 0 !important;
         }}
 
         section[data-testid="stSidebar"] * {{
             color: var(--text) !important;
+        }}
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {{
+            height: 3.35rem !important;
+            min-height: 3.35rem !important;
+            padding: 0.75rem 0.7rem 0.2rem 0.7rem !important;
+            margin: 0 !important;
+            border: none !important;
+            overflow: visible !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: flex-start !important;
+            background: transparent !important;
+        }}
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button {{
+            color: var(--text) !important;
+            background: var(--bg-panel) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 999px !important;
+            box-shadow: var(--shadow) !important;
+        }}
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button:hover {{
+            border-color: var(--accent) !important;
         }}
 
         section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
@@ -196,10 +222,42 @@ def build_theme_css(mode: str) -> str:
         }}
 
         .block-container {{
-            padding-top: 1.45rem;
+            padding-top: 0.45rem;
             padding-bottom: 2rem;
             max-width: 1280px;
             animation: contentRise 460ms ease-out;
+        }}
+
+        section[data-testid="stSidebar"] .block-container {{
+            padding-top: 0.1rem !important;
+            padding-bottom: 1.2rem !important;
+            margin-top: 0 !important;
+        }}
+
+        section[data-testid="stSidebar"] > div:first-child {{
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }}
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"],
+        section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {{
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }}
+
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {{
+            margin-top: 0.15rem !important;
+            padding-top: 0 !important;
+        }}
+
+        .sidebar-workspace-title {{
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            color: var(--text);
+            margin: 0.3rem 0 0.75rem 0;
+            padding: 0;
         }}
 
         [data-testid="column"] {{
@@ -753,6 +811,13 @@ def dataframe_to_csv_bytes(dataframe: pd.DataFrame) -> bytes:
     return export_frame.to_csv(index=False).encode("utf-8")
 
 
+def sanitize_chart_labels(series: pd.Series) -> pd.Series:
+    """Convert chart labels into readable text without NaN-style output."""
+    cleaned = series.copy()
+    cleaned = cleaned.where(~cleaned.isna(), "Unknown")
+    return cleaned.astype(str)
+
+
 def text_to_bytes(lines: list[str], prediction: dict[str, Any]) -> bytes:
     """Create a simple text report for download."""
     content: list[str] = ["NeuroSheet Report", ""]
@@ -766,6 +831,7 @@ def text_to_bytes(lines: list[str], prediction: dict[str, Any]) -> bytes:
         content.append(f"- Predicted value: {prediction['predicted_value']}")
         content.append(f"- Direction: {prediction['direction']}")
         content.append(f"- R2 score: {prediction['r2_score']}")
+        content.append(f"- Confidence note: {prediction.get('confidence_note', 'Not available')}")
     else:
         content.append(f"- Status: {prediction['reason']}")
     content.append("")
@@ -886,7 +952,7 @@ def save_outputs(results: dict[str, Any]) -> dict[str, Any]:
 
 def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
     """Render sidebar controls and return the selected inputs."""
-    st.sidebar.markdown("## Workspace")
+    st.sidebar.markdown('<div class="sidebar-workspace-title">Workspace</div>', unsafe_allow_html=True)
     appearance = st.sidebar.segmented_control(
         "Appearance",
         options=["Dark", "Light"],
@@ -926,6 +992,7 @@ def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
             help="Upload one or more workbooks to merge and analyze.",
         )
 
+    run_clicked = st.sidebar.button("Analyze Data", type="primary", use_container_width=True)
     st.sidebar.markdown("### Workflow")
     st.sidebar.markdown(
         """
@@ -936,7 +1003,6 @@ def render_sidebar() -> tuple[str, str, list[Any], bool, str]:
         """,
         unsafe_allow_html=True,
     )
-    run_clicked = st.sidebar.button("Analyze Data", type="primary", use_container_width=True)
     return source_mode, folder_path, uploaded_files, run_clicked, appearance
 
 
@@ -1149,7 +1215,13 @@ def render_visual_analytics(results: dict[str, Any], appearance: str) -> None:
             chart_value = "total_value" if "total_value" in grouped.columns else "record_count"
             category_column = grouped.columns[0]
             chart_source = grouped[[category_column, chart_value]].copy()
-            chart_source[category_column] = chart_source[category_column].astype(str)
+            chart_source = chart_source[chart_source[chart_value].fillna(0) > 0].copy()
+            chart_source[category_column] = sanitize_chart_labels(chart_source[category_column])
+            chart_source = chart_source.head(10)
+        else:
+            chart_source = pd.DataFrame()
+
+        if not chart_source.empty:
             bar_chart = (
                 alt.Chart(chart_source)
                 .mark_bar(
@@ -1193,8 +1265,13 @@ def render_visual_analytics(results: dict[str, Any], appearance: str) -> None:
         if not grouped.empty:
             share_value = "total_value" if "total_value" in grouped.columns else "record_count"
             category_column = grouped.columns[0]
-            share_source = grouped[[category_column, share_value]].copy().head(6)
-            share_source[category_column] = share_source[category_column].astype(str)
+            share_source = grouped[[category_column, share_value]].copy()
+            share_source = share_source[share_source[share_value].fillna(0) > 0].head(6)
+            share_source[category_column] = sanitize_chart_labels(share_source[category_column])
+        else:
+            share_source = pd.DataFrame()
+
+        if not share_source.empty:
             share_chart = (
                 alt.Chart(share_source)
                 .mark_arc(innerRadius=60, outerRadius=115)
@@ -1233,6 +1310,7 @@ def render_visual_analytics(results: dict[str, Any], appearance: str) -> None:
         y_column = "total_value" if "total_value" in trend.columns else "record_count"
         time_column = trend.columns[0]
         trend_source = trend[[time_column, y_column]].copy()
+        trend_source = trend_source[trend_source[y_column].notna()].copy()
         line_chart = (
             alt.Chart(trend_source)
             .mark_line(color=chart_palette["line"], strokeWidth=3, point=alt.OverlayMarkDef(size=70))
@@ -1301,7 +1379,7 @@ def render_prediction_section(results: dict[str, Any]) -> None:
 
         st.caption(
             f"{prediction['method']} using {prediction['historical_points']} historical points "
-            f"with R² score {prediction['r2_score']}."
+            f"with R² score {prediction['r2_score']}. {prediction.get('confidence_note', '')}"
         )
         historical_data = prediction["historical_data"]
         if not historical_data.empty:

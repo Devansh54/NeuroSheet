@@ -37,7 +37,10 @@ IDENTIFIER_KEYWORDS = ("id", "number", "customer_number", "member_customer_numbe
 def detect_column_types(dataframe: pd.DataFrame) -> dict[str, list[str]]:
     """Detect numeric, date, and categorical columns from a dataframe."""
     numeric_columns = [
-        column for column in dataframe.columns if pd.api.types.is_numeric_dtype(dataframe[column])
+        column
+        for column in dataframe.columns
+        if pd.api.types.is_numeric_dtype(dataframe[column])
+        and not pd.api.types.is_bool_dtype(dataframe[column])
     ]
     date_columns = [
         column for column in dataframe.columns if pd.api.types.is_datetime64_any_dtype(dataframe[column])
@@ -82,6 +85,8 @@ def choose_default_columns(dataframe: pd.DataFrame) -> dict[str, str | None]:
     ]
 
     target_column = _pick_by_keywords(numeric_candidates, TARGET_KEYWORDS)
+    if not target_column and numeric_candidates:
+        target_column = numeric_candidates[0]
 
     group_column = _pick_by_keywords(categorical_candidates, GROUP_KEYWORDS)
     if not group_column and categorical_candidates:
